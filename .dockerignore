@@ -1,34 +1,122 @@
 # Python
 __pycache__/
-*.py[cod]
+*.pyc
+*.pyo
+*.pyd
 *.egg-info/
+.eggs/
+dist/
+build/
 .venv/
 venv/
+env/
+*.egg
+.pytest_cache/
+.coverage
 
 # Node
 node_modules/
-.npm
-.package-lock.json
+npm-debug.log
+yarn-error.log
+.npm/
+package-lock.json
+yarn.lock
 
-# IDE
+# IDE & Editors
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
+.sublime-project
+.sublime-workspace
+*.iml
 
-# Logs
+# Build & Logs
 *.log
 logs/
+dist/
+build/
+.cache/
+*.tmp
 
-# Docker
-.dockerignore
-Dockerfile
-docker-compose.yml
-.env
-
-# OS
+# Git & VCS
 .git/
 .gitignore
+.gitattributes
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Documentation & Config
 README.md
+DEPLOYMENT.md
+CONFIG.md
+*.md
+LICENSE
+CHANGELOG.md
+
+# Docker & Container Config
+.dockerignore
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+.env
+.env.*
+.env.example
+
+# CI/CD
+.circleci/
+.gitlab/
+azure-pipelines.yml
+.drone.yml
+
+# Test Files
+tests/
+test/
+spec/
+*.test.js
+*.spec.js
+coverage/
+.nyc_output/
+
+# OS & System
+.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+*.swp
+*.swo
+*~
+.directory
+
+# Temporary & Backup
+*.bak
+*.backup
+*.tmp
+*.swp
+.#*
+*~
+#*#
+
+# Development
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# Dependencies Lock Files (if using multi-stage build)
+# Uncomment below to exclude lock files in production images
+# package-lock.json
+# yarn.lock
+# poetry.lock
+# Pipfile.lock
+
+# Node modules (use multi-stage build instead)
+# node_modules/
+
+# Git history
+.git/
+.gitignore
