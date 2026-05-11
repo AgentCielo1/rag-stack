@@ -1,0 +1,60 @@
+# SearXNG Settings Configuration
+
+general:
+  debug: false
+  instance_name: "{{ SEARXNG_INSTANCE_NAME }}"
+  privacypolicy_url: false
+  enable_metrics: false
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  base_url: "{{ SEARXNG_BASE_URL }}"
+  secret_key: "{{ SEARXNG_SECRET_KEY }}"
+  method: GET
+
+ui:
+  static_path: /usr/local/searxng/static
+  templates_path: /usr/local/searxng/templates
+  theme_args:
+    oscar_style: logicodev
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  autocomplete_min: 4
+  image_proxy: false
+  default_lang: en
+  ban_time_on_fail: 5
+  max_ban_time_on_fail: 120
+  default_http_accept_language: "en-US,en;q=0.9"
+
+# Proxy Configuration
+outgoing:
+  request_timeout: 3.0
+  max_retries: 0
+  # Uncomment below to enable proxy
+  # proxies:
+  #   http: "http://proxy.example.com:8080"
+  #   https: "http://proxy.example.com:8080"
+
+engines:
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+    disabled: false
+
+  - name: google
+    engine: google
+    shortcut: g
+    disabled: false
+
+  - name: bing
+    engine: bing
+    shortcut: bi
+    disabled: false
+
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    disabled: false
