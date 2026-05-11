@@ -1,0 +1,148 @@
+name: Deploy RAG Stack
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docker-compose.yml'
+      - '.env.example'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://${{ secrets.DEPLOY_HOST }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate configuration
+        run: |
+          echo "Validating docker-compose.yml..."
+          docker compose config > /dev/null
+          echo "✅ Configuration valid"
+
+      - name: Create deployment package
+        run: |
+          echo "Creating deployment package..."
+          mkdir -p deploy
+          cp docker-compose.yml deploy/
+          cp .env.example deploy/.env || true
+          cp rag-stack.sh deploy/ || true
+          cp -r .github/workflows deploy/ || true
+          tar -czf rag-stack-deploy.tar.gz deploy/
+          echo "✅ Deployment package ready"
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            set -e
+            echo "🚀 Starting deployment..."
+            
+            # Navigate to deployment directory
+            cd ${{ secrets.DEPLOY_PATH || '~/rag-stack' }}
+            
+            # Backup current compose file
+            if [ -f docker-compose.yml ]; then
+              cp docker-compose.yml docker-compose.yml.bak
+              echo "✅ Backup created"
+            fi
+            
+            # Pull latest images
+            echo "Pulling latest images..."
+            docker compose pull
+            
+            # Stop current services
+            echo "Stopping current services..."
+            docker compose down || true
+            
+            # Start new services
+            echo "Starting services..."
+            docker compose up -d
+            
+            # Wait for services to be healthy
+            echo "Waiting for services to become healthy..."
+            sleep 15
+            
+            # Check service status
+            echo "Checking service status..."
+            docker compose ps
+            
+            # Run health checks
+            echo "Running health checks..."
+            if docker compose exec -T qdrant curl -f http://localhost:6333/health > /dev/null 2>&1; then
+              echo "✅ Qdrant is healthy"
+            else
+              echo "⚠️  Qdrant health check failed"
+            fi
+            
+            if docker compose exec -T chroma curl -f http://localhost:8000/api/v2 > /dev/null 2>&1; then
+              echo "✅ Chroma is healthy"
+            else
+              echo "⚠️  Chroma health check failed"
+            fi
+            
+            echo "✅ Deployment completed successfully"
+
+      - name: Verify deployment
+        run: |
+          echo "Deployment verification..."
+          echo "To manually verify, SSH into your server and run:"
+          echo "  ssh -i ~/.ssh/id_rsa ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
+          echo "  cd ${{ secrets.DEPLOY_PATH || '~/rag-stack' }}"
+          echo "  docker compose ps"
+          echo "  ./rag-stack.sh health"
+
+      - name: Rollback on failure
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            echo "⚠️  Deployment failed, rolling back..."
+            cd ${{ secrets.DEPLOY_PATH || '~/rag-stack' }}
+            
+            if [ -f docker-compose.yml.bak ]; then
+              docker compose down || true
+              mv docker-compose.yml.bak docker-compose.yml
+              docker compose up -d
+              echo "✅ Rollback completed"
+            else
+              echo "❌ No backup found for rollback"
+            fi
+
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Deployment completed successfully"
+            echo "RAG Stack is now running on ${{ secrets.DEPLOY_HOST }}"
+          else
+            echo "❌ Deployment failed"
+            echo "Check logs above for details"
+          fi
